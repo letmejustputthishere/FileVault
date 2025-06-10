@@ -69,14 +69,18 @@ persistent actor Filevault {
             chunks = updatedChunks;
             totalSize = existingFile.totalSize + chunk.size();
             fileType = fileType;
-          }
+          },
         );
       };
     };
   };
 
   // Return list of files for a user.
-  public shared (msg) func getFiles() : async [{ name : Text; size : Nat; fileType : Text }] {
+  public shared (msg) func getFiles() : async [{
+    name : Text;
+    size : Nat;
+    fileType : Text;
+  }] {
     Iter.toArray(
       Iter.map(
         HashMap.vals(getUserFiles(msg.caller)),
@@ -86,7 +90,7 @@ persistent actor Filevault {
             size = file.totalSize;
             fileType = file.fileType;
           };
-        }
+        },
       )
     );
   };
@@ -124,4 +128,24 @@ persistent actor Filevault {
   public shared (msg) func deleteFile(name : Text) : async Bool {
     Option.isSome(HashMap.remove(getUserFiles(msg.caller), thash, name));
   };
+
+  // Rename a file.
+  public shared (msg) func renameFile(oldName : Text, newName : Text) : async Bool {
+    let userFiles = getUserFiles(msg.caller);
+
+    switch (HashMap.get(userFiles, thash, oldName)) {
+      case null false;
+      case (?file) {
+        // Don't overwrite existing files
+        if (Option.isSome(HashMap.get(userFiles, thash, newName))) {
+          return false;
+        };
+
+        let _ = HashMap.put(userFiles, thash, newName, { file with name = newName });
+        let _ = HashMap.remove(userFiles, thash, oldName);
+        true;
+      };
+    };
+  };
+
 };

@@ -17,6 +17,8 @@ function App() {
   const [files, setFiles] = useState([]);
   const [errorMessage, setErrorMessage] = useState();
   const [fileTransferProgress, setFileTransferProgress] = useState();
+  const [newName, setNewName] = useState();
+
 
   useEffect(() => {
     updateActor();
@@ -171,6 +173,23 @@ function App() {
     }
   }
 
+  async function handleFileRename(oldName, newName) {
+    if (window.confirm(`Are you sure you want to rename "${oldName}"?`)) {
+      try {
+        const success = await actor.renameFile(oldName, newName);
+        if (success) {
+          await loadFiles();
+          setNewName();
+        } else {
+          setErrorMessage('Failed to rename file');
+        }
+      } catch (error) {
+        console.error('Rename failed:', error);
+        setErrorMessage(`Failed to rename ${oldName} to ${newName}: ${error.message}`);
+      }
+    }
+  }
+
   return (
     <div className="container mx-auto p-4">
       <div className="flex flex-row justify-between">
@@ -221,6 +240,21 @@ function App() {
                 <div key={file.name} className="flex items-center justify-between rounded-lg bg-white p-3 shadow">
                   <div className="flex items-center space-x-2">
                     <span>{file.name}</span>
+                    <div>
+                      <input
+                        type="text"
+                        value={newName}
+                        onChange={(e) => setNewName(e.target.value)}
+                        placeholder="New file name"
+                        className="input"
+                      />
+                      <button
+                        onClick={() => handleFileRename(file.name, newName)}
+                        className="btn"
+                      >
+                        Rename
+                      </button>
+                    </div>
                   </div>
                   <div className="flex space-x-2">
                     <button onClick={() => handleFileDownload(file.name)} className="btn">
